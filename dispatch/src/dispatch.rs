@@ -8,6 +8,8 @@
 //!
 //! Apps need to implement the App trait to be managed.
 //!
+use core::mem;
+
 use crate::response::SIZE as ResponseSize;
 use crate::App;
 use crate::{
@@ -381,14 +383,6 @@ impl<'pipe> ApduDispatch<'pipe> {
         // not necessarily the case for other apps
 
         // if there is a selected app with a different AID, deselect it
-        if let Some(current_aid) = self.current_aid {
-            if current_aid != aid {
-                let app = Self::find_app(self.current_aid.as_ref(), apps).unwrap();
-                // for now all apps will be happy with this.
-                app.deselect();
-                self.current_aid = None;
-            }
-        }
 
         // select specified app in any case
         if let Some(app) = Self::find_app(Some(&aid), apps) {
@@ -401,7 +395,14 @@ impl<'pipe> ApduDispatch<'pipe> {
                 _ => panic!("Unexpected buffer state."),
             };
 
-            self.current_aid = Some(aid);
+            let old_aid = mem::replace(&mut self.current_aid, Some(aid));
+            if let Some(old_aid) = old_aid {
+                if old_aid != aid {
+                    let app = Self::find_app(self.current_aid.as_ref(), apps).unwrap();
+                    // for now all apps will be happy with this.
+                    app.deselect();
+                }
+            }
 
             self.handle_app_response(&result, &response);
         } else {
