@@ -326,6 +326,25 @@ fn select_not_found() {
 
 #[test]
 #[serial]
+fn select_not_found_still_selected() {
+    run_apdus(&[
+        // Select
+        &hex!("00A40400 05 0A01000001"),
+        // Ok
+        &hex!("9000"),
+        // Select
+        &hex!("00A40400 05 0A01000100"),
+        // Not found
+        &hex!("6A82"),
+        // Echo app is still selected
+        &hex!("80100000 05 0102030405 00"),
+        // Echo + Ok
+        &hex!("0000000000 0102030405 9000"),
+    ])
+}
+
+#[test]
+#[serial]
 fn select_bad_aid() {
     // Select with an incorrect AID shouldn't crash the application
     run_apdus(&[
